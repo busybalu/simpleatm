@@ -40,36 +40,43 @@ public class RestATMControllerTests {
 
 	@Autowired
 	private TestRestTemplate testRestTemplate;
-	
+	/**
+	 * This method is to test the greet user service shows the appropriate greet message to the ATM User.
+	 * @throws Exception
+	 */
 	@Test
 	public void testGreetUserWithName() throws Exception {
 
 		String validAcctNum = "123456789";
 		String validPin = "1234";
 		
+		// Use the /atm/inquirebalance/ service to get the Account Name to Validate the /atm/greetuser/ service
 		ResponseEntity<AccountBalance> inquireBalanceResEntity = this.testRestTemplate.getForEntity(
 				"http://localhost:" + this.port + "/atm/inquirebalance/" + validAcctNum + "/" + validPin,
 				AccountBalance.class);
 		then(inquireBalanceResEntity.getStatusCode()).isEqualTo(HttpStatus.OK);
+		//Get the Account Name
+		String expectedUserAcctName = inquireBalanceResEntity.getBody().getAcctName();
 		
-		String userAcctName = inquireBalanceResEntity.getBody().getAcctName();
-		
+		// Validate the /atm/greetuser/ service using Valid Account Number 
 		ResponseEntity<GreetUser> entity = this.testRestTemplate
 				.getForEntity("http://localhost:" + this.port + "/atm/greetuser/" + validAcctNum, GreetUser.class);
 
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		then(entity.getBody().getMessage()).isEqualTo(String.format(SuccessMessages.WELCOME_TEMPLATE.getDescription(), userAcctName));
+		then(entity.getBody().getMessage()).isEqualTo(String.format(SuccessMessages.WELCOME_TEMPLATE.getDescription(), expectedUserAcctName));
 	}
 
 	@Test
 	public void testGreetUserUsingWrongAccountNumber() throws Exception {
 
-		String testAcctNum = "5636346456456";
-		@SuppressWarnings("rawtypes")
-		ResponseEntity<Map> entity = this.testRestTemplate
-				.getForEntity("http://localhost:" + this.port + "/atm/greetuser/" + testAcctNum, Map.class);
+		String invalidAcctNum = "5636346456456";
+		// Validate the /atm/greetuser/ service using InValid Account Number 
+		ResponseEntity<ErrorDetails> entity = this.testRestTemplate
+				.getForEntity("http://localhost:" + this.port + "/atm/greetuser/" + invalidAcctNum, ErrorDetails.class);
 
-		then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
+		then(entity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		then(entity.getBody().getErrorCode()).isEqualTo(ErrorMessages.INVALID_ACCT_NUMBER.getCode());
+		then(entity.getBody().getErrorReason()).isEqualTo(ErrorMessages.INVALID_ACCT_NUMBER.getDescription());
 	}
 
 	@Test

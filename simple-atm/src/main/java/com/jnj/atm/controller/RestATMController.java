@@ -52,8 +52,9 @@ public class RestATMController {
 			GreetUser greetUsr = new GreetUser();
 			greetUsr.setMessage(String.format(SuccessMessages.WELCOME_TEMPLATE.getDescription(), usrAcct.getAcctName()));
 			return greetUsr;
+		}else {
+			throw new InvalidAccountException();
 		}
-		return null;
 	}
 
 	@RequestMapping(method = RequestMethod.GET, value = "/atm/inquirebalance/{acctNum}/{pin}")
@@ -95,8 +96,7 @@ public class RestATMController {
 			throw new AccountNotFoundException();
 		} else if (withdrawAmount.signum() == -1 || withdrawAmount.signum() == 0) {
 			throw new InvalidAmountException();
-		} else if (atmNoteDispenserService.getATMNoteDispenser().getTotalAmountInATM().signum() == 0
-				|| atmNoteDispenserService.getATMNoteDispenser().getTotalAmountInATM().signum() == -1) {
+		} else if (atmNoteDispenserService.getATMNoteDispenser().getTotalAmountInATM().signum() == 0) {
 			throw new ATMOutOfCashException();
 		} else if (!atmUserAcctService.hasSufficientFunds(usrAcct, withdrawAmt)) {
 			// Comes here if user Account has InSufficient Funds.
