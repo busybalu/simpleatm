@@ -65,7 +65,11 @@ public class RestATMControllerTests {
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
 		then(entity.getBody().getMessage()).isEqualTo(String.format(SuccessMessages.WELCOME_TEMPLATE.getDescription(), expectedUserAcctName));
 	}
-
+	/**
+	 * This method is used to test greetuser service respond with Invalid Account Number message
+	 * while using Invalid Account Number.
+	 * @throws Exception
+	 */
 	@Test
 	public void testGreetUserUsingWrongAccountNumber() throws Exception {
 
@@ -78,16 +82,20 @@ public class RestATMControllerTests {
 		then(entity.getBody().getErrorCode()).isEqualTo(ErrorMessages.INVALID_ACCT_NUMBER.getCode());
 		then(entity.getBody().getErrorReason()).isEqualTo(ErrorMessages.INVALID_ACCT_NUMBER.getDescription());
 	}
-
+	/**
+	 * This test method is used to check /atm/inquirebalance/{accountNumber}/{pin} service respond with
+	 * Curent Account Balance, Account Number, Account Name, etc.
+	 * @throws Exception
+	 */
 	@Test
-	public void testInquireBalanceWithValidAcctNumAndPin() {
+	public void testInquireBalanceWithValidAcctNumAndPin() throws Exception {
 		String validAcctNum = "123456789";
 		String validPin = "1234";
-		@SuppressWarnings("rawtypes")
-		ResponseEntity<Map> entity = this.testRestTemplate.getForEntity(
-				"http://localhost:" + this.port + "/atm/inquirebalance/" + validAcctNum + "/" + validPin, Map.class);
-
+		ResponseEntity<AccountBalance> entity = this.testRestTemplate.getForEntity(
+				"http://localhost:" + this.port + "/atm/inquirebalance/" + validAcctNum + "/" + validPin, AccountBalance.class);
+		String expectedAcctNum = validAcctNum;
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
+		then(entity.getBody().getAcctNum()).isEqualTo(expectedAcctNum);
 	}
 
 	@Test

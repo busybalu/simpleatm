@@ -1,5 +1,11 @@
 /**
- * 
+ * This Class serves RESTFULL end points for all the below ATM Services.
+ * 1) Greet User
+ * 2) Inquire Account Details
+ * 3) Withdraw Money from ATM
+ * 4) Deposit Money to Bank Account
+ * 5) Check ATM Health
+ * 6) Load Money to ATM
  */
 package com.jnj.atm.controller;
 
@@ -44,7 +50,15 @@ public class RestATMController {
 
 	@Autowired
 	private ATMNoteDispenserService atmNoteDispenserService;
-
+	/**
+	 * This method serves as '/atm/greetuser/{acctNum}' RESTFULL webservice end point to greet the ATM user.
+	 * 
+	 * Sample Output:
+	 * {"message": "Welcome to ATM, BALU RAMAMOORTHY!"}
+	 * 
+	 * @param acctNum Account Number of ATM user
+	 * @return GreetUser
+	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/atm/greetuser/{acctNum}")
 	public GreetUser greetUserWithName(@PathVariable(value = "acctNum") String acctNum) {
 		ATMUserAccount usrAcct = atmUserAcctService.getATMUserAccountByAcctNum(acctNum);
@@ -56,7 +70,25 @@ public class RestATMController {
 			throw new InvalidAccountException();
 		}
 	}
-
+	/**
+	 * This method serves as '/atm/inquirebalance/{acctNum}/{pin}' RESTFULL webservice end point to check ATM user's Account Details
+	 * which includes overdraftBalance, alpha3CurrencyCode, timestamp, transactionID, accountNumber, accountName and accountBalance.
+	 * 
+	 * Sample Output :
+	 * {
+	 * "overdraftBalance": 200,
+	 * "alpha3CurrencyCode": "EUR",
+	 * "timestamp": "2018-07-16T20:19:08.845+0000",
+	 * "transactionID": "929e28e1-5db4-4467-ae1b-d96a90cc8e99",
+	 * "accountNumber": "123456789",
+	 * "accountName": "BALU RAMAMOORTHY",
+	 * "accountBalance": 800
+	 * }
+	 * 
+	 * @param acctNum Account Number of ATM user
+	 * @param pin PIN Number of ATM user
+	 * @return AccountBalance
+	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/atm/inquirebalance/{acctNum}/{pin}")
 	public AccountBalance inquireBalance(@PathVariable(value = "acctNum") String acctNum,
 			@PathVariable(value = "pin") String pin) {
