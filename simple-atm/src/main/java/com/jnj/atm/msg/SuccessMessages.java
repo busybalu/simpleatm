@@ -5,8 +5,8 @@ package com.jnj.atm.msg;
  *
  */
 public enum SuccessMessages {
-	WELCOME_TEMPLATE(2001, "Welcome to ATM, %s!"), DEPOSIT_SUCCESS(2002,
-			"Money Deposited to your Bank account %s Successfully");
+	WELCOME_TEMPLATE(2001, "Welcome to ATM, %s!"), 
+	DEPOSIT_SUCCESS(2002, "Money Deposited to your Bank account %s Successfully");
 
 	private final int code;
 	private final String description;
