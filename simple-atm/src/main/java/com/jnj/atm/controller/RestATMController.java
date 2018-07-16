@@ -50,43 +50,46 @@ public class RestATMController {
 
 	@Autowired
 	private ATMNoteDispenserService atmNoteDispenserService;
+
 	/**
-	 * This method serves as '/atm/greetuser/{acctNum}' RESTFULL webservice end point to greet the ATM user.
+	 * This method serves as '/atm/greetuser/{acctNum}' RESTFULL webservice end
+	 * point to greet the ATM user.
 	 * 
-	 * Sample Output:
-	 * {"message": "Welcome to ATM, BALU RAMAMOORTHY!"}
+	 * Sample Output: {"message": "Welcome to ATM, BALU RAMAMOORTHY!"}
 	 * 
-	 * @param acctNum Account Number of ATM user
+	 * @param acctNum
+	 *            Account Number of ATM user
 	 * @return GreetUser
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/atm/greetuser/{acctNum}")
 	public GreetUser greetUserWithName(@PathVariable(value = "acctNum") String acctNum) {
 		ATMUserAccount usrAcct = atmUserAcctService.getATMUserAccountByAcctNum(acctNum);
 		if (null != usrAcct) {
+			//Comes here when User Account Exists in our Records.
 			GreetUser greetUsr = new GreetUser();
-			greetUsr.setMessage(String.format(SuccessMessages.WELCOME_TEMPLATE.getDescription(), usrAcct.getAcctName()));
+			greetUsr.setMessage(
+					String.format(SuccessMessages.WELCOME_TEMPLATE.getDescription(), usrAcct.getAcctName()));
 			return greetUsr;
-		}else {
+		} else {
 			throw new InvalidAccountException();
 		}
 	}
+
 	/**
-	 * This method serves as '/atm/inquirebalance/{acctNum}/{pin}' RESTFULL webservice end point to check ATM user's Account Details
-	 * which includes overdraftBalance, alpha3CurrencyCode, timestamp, transactionID, accountNumber, accountName and accountBalance.
+	 * This method serves as '/atm/inquirebalance/{acctNum}/{pin}' RESTFULL
+	 * webservice end point to check ATM user's Account Details which includes
+	 * overdraftBalance, alpha3CurrencyCode, timestamp, transactionID,
+	 * accountNumber, accountName and accountBalance.
 	 * 
-	 * Sample Output :
-	 * {
-	 * "overdraftBalance": 200,
-	 * "alpha3CurrencyCode": "EUR",
-	 * "timestamp": "2018-07-16T20:19:08.845+0000",
-	 * "transactionID": "929e28e1-5db4-4467-ae1b-d96a90cc8e99",
-	 * "accountNumber": "123456789",
-	 * "accountName": "BALU RAMAMOORTHY",
-	 * "accountBalance": 800
-	 * }
+	 * Sample Output : { "overdraftBalance": 200, "alpha3CurrencyCode": "EUR",
+	 * "timestamp": "2018-07-16T20:19:08.845+0000", "transactionID":
+	 * "929e28e1-5db4-4467-ae1b-d96a90cc8e99", "accountNumber": "123456789",
+	 * "accountName": "BALU RAMAMOORTHY", "accountBalance": 800 }
 	 * 
-	 * @param acctNum Account Number of ATM user
-	 * @param pin PIN Number of ATM user
+	 * @param acctNum
+	 *            Account Number of ATM user
+	 * @param pin
+	 *            PIN Number of ATM user
 	 * @return AccountBalance
 	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/atm/inquirebalance/{acctNum}/{pin}")
@@ -114,6 +117,25 @@ public class RestATMController {
 		}
 	}
 
+	/**
+	 * This method serves as a RESTFULL webservice end point to withdraw money from
+	 * the ATM.
+	 * 
+	 * Sample Output: { "withdrawnAmount": 235, "currentBalance": 565,
+	 * "overdraftBalance": 200, "alpha3CurrencyCode": "EUR", "timestamp":
+	 * "2018-07-16T19:29:17.437+0000", "transactionID":
+	 * "d066e4f9-95e1-4752-aa76-a3e06faaf8ef", "accountNumber": "123456789",
+	 * "accountName": "BALU RAMAMOORTHY", "dispensedDenominations": { "50": 4, "20":
+	 * 1, "10": 1, "5": 1 } }
+	 * 
+	 * @param withdrawAmt
+	 *            Amount to Withdraw
+	 * @param acctNum
+	 *            Account Number of ATM User
+	 * @param pin
+	 *            PIN Number of ATM User
+	 * @return CurrentAccountBalance
+	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/atm/withdrawmoney/{withdrawAmt}/{acctNum}/{pin}")
 	public CurrentAccountBalance withdrawMoney(@PathVariable(value = "withdrawAmt") String withdrawAmt,
 			@PathVariable(value = "acctNum") String acctNum, @PathVariable(value = "pin") String pin) {
@@ -157,6 +179,21 @@ public class RestATMController {
 
 	}
 
+	/**
+	 * This method serves as a RESTFULL webservice end point to deposit money to
+	 * Bank Account
+	 * 
+	 * Sample Output: { "txnID": "cfa90d43-45d3-433e-bd65-996f6b8335f9",
+	 * "timestamp": "2018-07-16T19:29:24.069+0000", "successCode": 2002,
+	 * "successMessage": "Money Deposited to your Bank account 123456789
+	 * Successfully" }.
+	 * 
+	 * @param depositAmt
+	 *            Amount to Deposit
+	 * @param acctNum
+	 *            Account Number of the ATM User
+	 * @return SuccessDetails
+	 */
 	@RequestMapping(method = RequestMethod.POST, value = "/bank/depositmoney/{depositAmt}/{acctNum}")
 	public SuccessDetails depositMoney(@PathVariable(value = "depositAmt") String depositAmt,
 			@PathVariable(value = "acctNum") String acctNum) {
@@ -180,6 +217,14 @@ public class RestATMController {
 		}
 	}
 
+	/**
+	 * 
+	 * @param userid
+	 *            Admin User ID
+	 * @param password
+	 *            Admin User Password
+	 * @return ATMNotesDispenser
+	 */
 	@RequestMapping(method = RequestMethod.GET, value = "/atm/healthCheck/{userid}/{password}")
 	public ATMNotesDispenser checkATMHealth(@PathVariable(value = "userid") String userid,
 			@PathVariable(value = "password") String password) {

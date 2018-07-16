@@ -44,8 +44,8 @@ public class ATMUserAccountDAO {
 		acct3.setAcctName("USER ONE");
 		acct3.setCurrency(Currency.getInstance("EUR"));
 		acct3.setPin(1111);
-		acct3.setOpeningBal(BigDecimal.valueOf(1111.11));
-		acct3.setOverdraft(BigDecimal.valueOf(111.11));
+		acct3.setOpeningBal(BigDecimal.valueOf(1110));
+		acct3.setOverdraft(BigDecimal.valueOf(110));
 
 		ATMUserAccount acct4 = new ATMUserAccount();
 		acct4.setAcctNo(BigInteger.valueOf(222222222));

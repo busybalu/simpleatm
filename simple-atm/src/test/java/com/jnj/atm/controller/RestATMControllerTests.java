@@ -3,6 +3,7 @@ package com.jnj.atm.controller;
 import static org.assertj.core.api.BDDAssertions.then;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -42,7 +43,7 @@ public class RestATMControllerTests {
 	private TestRestTemplate testRestTemplate;
 	/**
 	 * This method is to test the greet user service shows the appropriate greet message to the ATM User.
-	 * @throws Exception
+	 * @throws Exception throws Exception
 	 */
 	@Test
 	public void testGreetUserWithName() throws Exception {
@@ -68,7 +69,7 @@ public class RestATMControllerTests {
 	/**
 	 * This method is used to test greetuser service respond with Invalid Account Number message
 	 * while using Invalid Account Number.
-	 * @throws Exception
+	 * @throws Exception throws Exception
 	 */
 	@Test
 	public void testGreetUserUsingWrongAccountNumber() throws Exception {
@@ -85,7 +86,7 @@ public class RestATMControllerTests {
 	/**
 	 * This test method is used to check /atm/inquirebalance/{accountNumber}/{pin} service respond with
 	 * Curent Account Balance, Account Number, Account Name, etc.
-	 * @throws Exception
+	 * @throws Exception throws Exception
 	 */
 	@Test
 	public void testInquireBalanceWithValidAcctNumAndPin() throws Exception {
@@ -102,37 +103,38 @@ public class RestATMControllerTests {
 	public void testInquireBalanceWithWrongAcctNum() {
 		String invalidAcctNum = "645634345345";
 		String pin = "1234";
-		@SuppressWarnings("rawtypes")
-		ResponseEntity<Map> entity = this.testRestTemplate.getForEntity(
-				"http://localhost:" + this.port + "/atm/inquirebalance/" + invalidAcctNum + "/" + pin, Map.class);
+		ResponseEntity<ErrorDetails> entity = this.testRestTemplate.getForEntity(
+				"http://localhost:" + this.port + "/atm/inquirebalance/" + invalidAcctNum + "/" + pin, ErrorDetails.class);
 
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		then(entity.getBody().getErrorCode()).isEqualTo(ErrorMessages.INVALID_ACCT.getCode());
+		then(entity.getBody().getErrorReason()).isEqualTo(ErrorMessages.INVALID_ACCT.getDescription());
 	}
 
 	@Test
 	public void testInquireBalanceUsingWrongPin() {
 		String validAcctNum = "123456789";
 		String wrongPin = "2222";
-		@SuppressWarnings("rawtypes")
-
-		ResponseEntity<Map> entity = this.testRestTemplate.getForEntity(
-				"http://localhost:" + this.port + "/atm/inquirebalance/" + validAcctNum + "/" + wrongPin, Map.class);
+		ResponseEntity<ErrorDetails> entity = this.testRestTemplate.getForEntity(
+				"http://localhost:" + this.port + "/atm/inquirebalance/" + validAcctNum + "/" + wrongPin, ErrorDetails.class);
 
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		then(entity.getBody().getErrorCode()).isEqualTo(ErrorMessages.INVALID_ACCT.getCode());
+		then(entity.getBody().getErrorReason()).isEqualTo(ErrorMessages.INVALID_ACCT.getDescription());
 	}
 
 	@Test
 	public void testWithdrawMoneyUsingValidCredentials() {
 		String validAcctNum = "123456789";
 		String validPin = "1234";
-		String validWithdrawAmount = "10";
+		String validWithdrawAmount = "10.00";
 
 		ResponseEntity<CurrentAccountBalance> entity = this.testRestTemplate.postForEntity("http://localhost:"
 				+ this.port + "/atm/withdrawmoney/" + validWithdrawAmount + "/" + validAcctNum + "/" + validPin, null,
 				CurrentAccountBalance.class);
-
+		String expectedAmountWithdrawn = validWithdrawAmount;
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
-		then(entity.getBody()).isNotNull();
+		then(entity.getBody().getWithdrawnAmount()).isEqualTo(new BigDecimal(expectedAmountWithdrawn));
 	}
 
 	@Test
@@ -260,13 +262,20 @@ public class RestATMControllerTests {
 	public void testWithdrawMoneyGreaterThanOpeningBalButCanbeCoveredByOverdraft() {
 		String validAcctNum = "111111111";
 		String validPin = "1111";
-		String validWithdrawAmount = "1115"; // Amount here is greater than Opening Balance but Can be Withdrawn using
-												// Overdraft Amount
-		ResponseEntity<ErrorDetails> entity = this.testRestTemplate.postForEntity("http://localhost:" + this.port
-				+ "/atm/withdrawmoney/" + validWithdrawAmount + "/" + validAcctNum + "/" + validPin, null,
-				ErrorDetails.class);
+		
+		ResponseEntity<AccountBalance> inquireBalanceResEntity = this.testRestTemplate.getForEntity(
+				"http://localhost:" + this.port + "/atm/inquirebalance/" + validAcctNum + "/" + validPin,
+				AccountBalance.class);
+		//Get the current Balance and Add 20.00 to it. Amount here is greater than Opening Balance but Can be Withdrawn using Overdraft Amount
+		BigDecimal currentBalPlus20 = inquireBalanceResEntity.getBody().getBalance().add(new BigDecimal("20.00"));
+		 
+		ResponseEntity<CurrentAccountBalance> entity = this.testRestTemplate.postForEntity("http://localhost:" + this.port
+				+ "/atm/withdrawmoney/" + currentBalPlus20 + "/" + validAcctNum + "/" + validPin, null,
+				CurrentAccountBalance.class);
 
+		BigDecimal expectedAmountWithdrawn = currentBalPlus20;
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
+		then(entity.getBody().getWithdrawnAmount()).isEqualTo(expectedAmountWithdrawn);
 	}
 
 	@Test
@@ -360,65 +369,69 @@ public class RestATMControllerTests {
 		ResponseEntity<ErrorDetails> entity = this.testRestTemplate.postForEntity(
 				"http://localhost:" + this.port + "/bank/depositmoney/" + validDepositAmount + "/" + invalidAcctNum,
 				null, ErrorDetails.class);
+		then(entity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 		then(entity.getBody().getErrorCode()).isEqualTo(ErrorMessages.INVALID_ACCT_NUMBER.getCode());
 		then(entity.getBody().getErrorReason()).isEqualTo(ErrorMessages.INVALID_ACCT_NUMBER.getDescription());
-		then(entity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 	}
 
 	@Test
 	public void testDepositMoneyUsinngNegativeAmount() {
 		String validAcctNum = "123456789";
 		String invalidDepositAmount = "-100";
-		ResponseEntity<SuccessDetails> entity = this.testRestTemplate.postForEntity(
+		ResponseEntity<ErrorDetails> entity = this.testRestTemplate.postForEntity(
 				"http://localhost:" + this.port + "/bank/depositmoney/" + invalidDepositAmount + "/" + validAcctNum,
-				null, SuccessDetails.class);
+				null, ErrorDetails.class);
 
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		then(entity.getBody().getErrorCode()).isEqualTo(ErrorMessages.INVALID_AMOUNT.getCode());
+		then(entity.getBody().getErrorReason()).isEqualTo(ErrorMessages.INVALID_AMOUNT.getDescription());
 	}
 
 	@Test
 	public void testDepositMoneyUsinngZeroAmount() {
 		String validAcctNum = "123456789";
 		String invalidDepositAmount = "0";
-		ResponseEntity<SuccessDetails> entity = this.testRestTemplate.postForEntity(
+		ResponseEntity<ErrorDetails> entity = this.testRestTemplate.postForEntity(
 				"http://localhost:" + this.port + "/bank/depositmoney/" + invalidDepositAmount + "/" + validAcctNum,
-				null, SuccessDetails.class);
+				null, ErrorDetails.class);
 
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		then(entity.getBody().getErrorCode()).isEqualTo(ErrorMessages.INVALID_AMOUNT.getCode());
+		then(entity.getBody().getErrorReason()).isEqualTo(ErrorMessages.INVALID_AMOUNT.getDescription());
 	}
 
 	@Test
 	public void testCheckATMHealthUsingValidAdminCredentials() {
 		String validAdminUser = "admin";
 		String validAdminPassword = "P@55w0rd";
-		@SuppressWarnings("rawtypes")
-		ResponseEntity<Map> entity = this.testRestTemplate.getForEntity(
+		ResponseEntity<ATMNotesDispenser> entity = this.testRestTemplate.getForEntity(
 				"http://localhost:" + this.port + "/atm/healthCheck/" + validAdminUser + "/" + validAdminPassword,
-				Map.class);
+				ATMNotesDispenser.class);
 
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.OK);
+		then(entity.getBody()).isNotNull();
 	}
 
 	@Test
 	public void testCheckATMHealthUsingInValidAdminCredentials() {
 		String inValidAdminUser = "admin233";
 		String inValidAdminPassword = "P@44";
-		@SuppressWarnings("rawtypes")
-		ResponseEntity<Map> entity = this.testRestTemplate.getForEntity(
+		ResponseEntity<ErrorDetails> entity = this.testRestTemplate.getForEntity(
 				"http://localhost:" + this.port + "/atm/healthCheck/" + inValidAdminUser + "/" + inValidAdminPassword,
-				Map.class);
+				ErrorDetails.class);
 
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+		then(entity.getBody().getErrorCode()).isEqualTo(ErrorMessages.INVALID_ACCT.getCode());
+		then(entity.getBody().getErrorReason()).isEqualTo(ErrorMessages.INVALID_ACCT.getDescription());
 	}
 
 	@Test
 	public void testCheckATMHealthUsingEmptyCredentials() {
 		String inValidAdminUser = "";
 		String inValidAdminPassword = "";
-		@SuppressWarnings("rawtypes")
-		ResponseEntity<Map> entity = this.testRestTemplate.getForEntity(
+		ResponseEntity<ErrorDetails> entity = this.testRestTemplate.getForEntity(
 				"http://localhost:" + this.port + "/atm/healthCheck/" + inValidAdminUser + "/" + inValidAdminPassword,
-				Map.class);
+				ErrorDetails.class);
 
 		then(entity.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 	}
